@@ -48,6 +48,7 @@ static int verboseflag = 0;
 #ifndef PCRE2FILTER
 static int wantdedup = 0;
 #endif
+int iroh_mode = 0;
 
 // 0, direndpos, onionendpos
 // printstartpos = either 0 or direndpos
@@ -87,8 +88,56 @@ struct tstatstruct {
 VEC_STRUCT(tstatsvec,struct tstatstruct);
 #endif
 
+static const char *prog_basename(const char *path)
+{
+	const char *slash = strrchr(path,'/');
+	return slash ? slash + 1 : path;
+}
+
+static int detect_iroh_mode(const char *progname)
+{
+	const char *base = prog_basename(progname);
+	return strncmp(base,"mkp-iroh",8) == 0;
+}
+
 static void printhelp(FILE *out,const char *progname)
 {
+	if (iroh_mode) {
+		fprintf(out,
+			"Usage: %s FILTER [FILTER...] [OPTION]\n"
+			"       %s -f FILTERFILE [OPTION]\n"
+			"Filters are RFC4648 base32 (lowercase a-z and 2-7), max length %d.\n"
+			"Options:\n"
+			"  -f FILTERFILE         specify filter file which contains filters separated\n"
+			"                        by newlines.\n"
+			"  -D                    deduplicate filters.\n"
+			"  -q                    do not print diagnostic output to stderr.\n"
+			"  -x                    do not print matches.\n"
+			"  -v                    print more diagnostic data.\n"
+			"  -o FILENAME           output matches to specified file (append).\n"
+			"  -O FILENAME           output matches to specified file (overwrite).\n"
+			"  -d DIRNAME            output directory (ignored in iroh mode).\n"
+			"  -F                    include directory names in output (ignored in iroh mode).\n"
+			"  -t NUMTHREADS         specify number of threads to utilise\n"
+			"                        (default - try detecting CPU core count).\n"
+			"  -j NUMTHREADS         same as -t.\n"
+			"  -n NUMKEYS            specify number of keys (default - 0 - unlimited).\n"
+			"  -N NUMWORDS           specify number of words per key (default - 1).\n"
+			"  -Z                    deprecated, does nothing.\n"
+			"  -z                    deprecated, does nothing.\n"
+			"  -B                    use batching key generation method (current default).\n"
+			"  -s                    print statistics each 10 seconds.\n"
+			"  -S SECONDS            print statistics every specified amount of seconds.\n"
+			"  -T                    do not reset statistics counters when printing.\n"
+			"  -y                    YAML output is not supported in iroh mode.\n"
+			"  -Y                    YAML input is not supported in iroh mode.\n"
+			"      --rawyaml         ignored in iroh mode.\n"
+			"  -h, --help, --usage   print help to stdout and quit.\n"
+			"  -V, --version         print version information to stdout and exit.\n"
+			,progname,progname,IROH_BASE32_LEN);
+		fflush(out);
+		return;
+	}
 	fprintf(out,
 		//         1         2         3         4         5         6         7
 		//1234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -143,9 +192,9 @@ static void printhelp(FILE *out,const char *progname)
 	fflush(out);
 }
 
-static void printversion(void)
+static void printversion(const char *progname)
 {
-	fprintf(stdout,"mkp224o " VERSION "\n");
+	fprintf(stdout,"%s " VERSION "\n",prog_basename(progname));
 	fflush(stdout);
 }
 
@@ -300,6 +349,7 @@ int main(int argc,char **argv)
 	fout = stdout;
 
 	const char *progname = argv[0];
+	iroh_mode = detect_iroh_mode(progname);
 	if (argc <= 1) {
 		printhelp(stderr,progname);
 		exit(1);
@@ -326,11 +376,16 @@ int main(int argc,char **argv)
 					exit(0);
 				}
 				else if (!strcmp(arg,"version")) {
-					printversion();
+					printversion(progname);
 					exit(0);
 				}
-				else if (!strcmp(arg,"rawyaml"))
+				else if (!strcmp(arg,"rawyaml")) {
+					if (iroh_mode) {
+						fprintf(stderr,"--rawyaml is not supported in iroh mode\n");
+						exit(1);
+					}
 					yamlraw = 1;
+				}
 #ifdef PASSPHRASE
 				else if (!strcmp(arg,"checkpoint")) {
 					if (argc--)
@@ -363,7 +418,7 @@ int main(int argc,char **argv)
 				exit(0);
 			}
 			else if (*arg == 'V') {
-				printversion();
+				printversion(progname);
 				exit(0);
 			}
 			else if (*arg == 'f') {
@@ -402,10 +457,18 @@ int main(int argc,char **argv)
 					e_additional();
 			}
 			else if (*arg == 'F')
+			{
+				if (iroh_mode && !quietflag)
+					fprintf(stderr,"-F is ignored in iroh mode\n");
 				dirnameflag = 1;
+			}
 			else if (*arg == 'd') {
 				if (argc--)
+				{
+					if (iroh_mode && !quietflag)
+						fprintf(stderr,"-d is ignored in iroh mode\n");
 					setworkdir(*argv++);
+				}
 				else
 					e_additional();
 			}
@@ -457,9 +520,18 @@ int main(int argc,char **argv)
 				e_nostatistics();
 #endif
 			}
-			else if (*arg == 'y')
+			else if (*arg == 'y') {
+				if (iroh_mode) {
+					fprintf(stderr,"-y is not supported in iroh mode\n");
+					exit(1);
+				}
 				yamloutput = 1;
+			}
 			else if (*arg == 'Y') {
+				if (iroh_mode) {
+					fprintf(stderr,"-Y is not supported in iroh mode\n");
+					exit(1);
+				}
 				yamlinput = 1;
 				if (argc) {
 					--argc;

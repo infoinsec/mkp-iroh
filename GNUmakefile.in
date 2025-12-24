@@ -5,6 +5,7 @@ CFLAGS= $(CSTD) @CFLAGS@ @CPPFLAGS@ -DED25519_@ED25519IMPL@ @PIE@ @MYDEFS@ -DVER
 ASFLAGS= @PIE@
 LDFLAGS= @LDFLAGS@
 MV= mv
+CP= cp
 
 ED25519_DEFS= -DED25519_ref10 -DED25519_amd64_51_30k -DED25519_amd64_64_24k -DED25519_donna
 ED25519_ref10= $(patsubst @SRCDIR@/%.c,%.c.o,$(wildcard @SRCDIR@/ed25519/ref10/*.c))
@@ -74,14 +75,16 @@ UTIL_CALCEST_LIB= -lm
 TEST_ED25519_LIB= -lsodium
 
 MAIN_TGT= mkp224o
+IROH_TGT= mkp-iroh
 UTIL_TGT= calcest
 TEST_TGT= test_base64 test_base32 test_base16 test_ed25519
 
 MAIN_EXE= $(patsubst %,%@EXEEXT@,$(MAIN_TGT))
+IROH_EXE= $(patsubst %,%@EXEEXT@,$(IROH_TGT))
 UTIL_EXE= $(patsubst %,%@EXEEXT@,$(UTIL_TGT))
 TEST_EXE= $(patsubst %,%@EXEEXT@,$(TEST_TGT))
 
-ALL_EXE= $(MAIN_EXE) $(UTIL_EXE) $(TEST_EXE)
+ALL_EXE= $(MAIN_EXE) $(IROH_EXE) $(UTIL_EXE) $(TEST_EXE)
 
 .PHONY: default all main util test clean distclean depend
 
@@ -97,6 +100,9 @@ test: $(TEST_EXE)
 
 mkp224o@EXEEXT@: $(MAIN_OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@.tmp $^ $(MAIN_LIB) && $(MV) $@.tmp $@
+
+mkp-iroh@EXEEXT@: mkp224o@EXEEXT@
+	$(CP) $< $@
 
 calcest@EXEEXT@: $(UTIL_CALCEST_OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@.tmp $^ $(UTIL_CALCEST_LIB) && $(MV) $@.tmp $@

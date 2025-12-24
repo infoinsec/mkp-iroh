@@ -16,6 +16,10 @@ extern const char * const skprefix;
 // full onion address, WITHOUT newline or terminating nil char
 #define ONION_LEN 62
 
+// RFC4648 base32 length for a 32-byte public key (no padding)
+#define IROH_BASE32_LEN 52
+#define IROH_SECRET_LEN 32
+
 extern pthread_mutex_t fout_mutex;
 extern FILE *fout;
 
@@ -23,3 +27,5 @@ extern size_t onionendpos;   // end of .onion within string
 extern size_t direndpos;     // end of dir before .onion within string
 extern size_t printstartpos; // where to start printing from
 extern size_t printlen;      // precalculated, related to printstartpos
+
+extern int iroh_mode;

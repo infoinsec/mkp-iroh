@@ -10,7 +10,7 @@ void *CRYPTO_NAMESPACE(worker_batch_pass)(void *task)
 	u8 hashsrc[checksumstrlen + PUBLIC_LEN + 1];
 	u8 wpk[PUBLIC_LEN + 1];
 	ge_p3 ALIGN(16) ge_public;
-	char *sname;
+	char *sname = 0;
 
 	// state to keep batch data
 	ge_p3   ALIGN(16) ge_batch [BATCHNUM];
@@ -36,7 +36,8 @@ void *CRYPTO_NAMESPACE(worker_batch_pass)(void *task)
 	memcpy(hashsrc,checksumstr,checksumstrlen);
 	hashsrc[checksumstrlen + PUBLIC_LEN] = 0x03; // version
 
-	sname = makesname();
+	if (!iroh_mode)
+		sname = makesname();
 
 	int seednear;
 
@@ -109,14 +110,18 @@ initseed:
 
 				ADDNUMSUCCESS;
 
-				// calc checksum
-				memcpy(&hashsrc[checksumstrlen],pk,PUBLIC_LEN);
-				FIPS202_SHA3_256(hashsrc,sizeof(hashsrc),&pk[PUBLIC_LEN]);
-				// version byte
-				pk[PUBLIC_LEN + 2] = 0x03;
-				// full name
-				strcpy(base32_to(&sname[direndpos],pk,PUBONION_LEN),".onion");
-				onionready(sname,secret,pubonion.raw,seednear && pw_warnnear);
+				if (iroh_mode) {
+					irohready(sk,pk,seednear && pw_warnnear);
+				} else {
+					// calc checksum
+					memcpy(&hashsrc[checksumstrlen],pk,PUBLIC_LEN);
+					FIPS202_SHA3_256(hashsrc,sizeof(hashsrc),&pk[PUBLIC_LEN]);
+					// version byte
+					pk[PUBLIC_LEN + 2] = 0x03;
+					// full name
+					strcpy(base32_to(&sname[direndpos],pk,PUBONION_LEN),".onion");
+					onionready(sname,secret,pubonion.raw,seednear && pw_warnnear);
+				}
 				pk[PUBLIC_LEN] = 0; // what is this for?
 
 				if (pw_skipnear)
@@ -181,14 +186,18 @@ initseed:
 
 				ADDNUMSUCCESS;
 
-				// calc checksum
-				memcpy(&hashsrc[checksumstrlen],pk,PUBLIC_LEN);
-				FIPS202_SHA3_256(hashsrc,sizeof(hashsrc),&pk[PUBLIC_LEN]);
-				// version byte
-				pk[PUBLIC_LEN + 2] = 0x03;
-				// full name
-				strcpy(base32_to(&sname[direndpos],pk,PUBONION_LEN),".onion");
-				onionready(sname,secret,pubonion.raw,seednear && pw_warnnear);
+				if (iroh_mode) {
+					irohready(sk,pk,seednear && pw_warnnear);
+				} else {
+					// calc checksum
+					memcpy(&hashsrc[checksumstrlen],pk,PUBLIC_LEN);
+					FIPS202_SHA3_256(hashsrc,sizeof(hashsrc),&pk[PUBLIC_LEN]);
+					// version byte
+					pk[PUBLIC_LEN + 2] = 0x03;
+					// full name
+					strcpy(base32_to(&sname[direndpos],pk,PUBONION_LEN),".onion");
+					onionready(sname,secret,pubonion.raw,seednear && pw_warnnear);
+				}
 				pk[PUBLIC_LEN] = 0; // what is this for?
 
 				if (pw_skipnear)
@@ -203,7 +212,8 @@ initseed:
 	goto initseed;
 
 end:
-	free(sname);
+	if (sname)
+		free(sname);
 
 	POSTFILTER
 

@@ -73,6 +73,58 @@ char *makesname(void)
 	return sname;
 }
 
+static void hex_encode_lower(char *dst,const u8 *src,size_t slen)
+{
+	static const char hexdigits[] = "0123456789abcdef";
+	for (size_t i = 0;i < slen;++i) {
+		*dst++ = hexdigits[src[i] >> 4];
+		*dst++ = hexdigits[src[i] & 0x0F];
+	}
+	*dst = 0;
+}
+
+static void irohready(const u8 *secret,const u8 *publickey,int warnnear)
+{
+	if (endwork)
+		return;
+
+	if (numneedgenerate) {
+		pthread_mutex_lock(&keysgenerated_mutex);
+		if (keysgenerated >= numneedgenerate) {
+			pthread_mutex_unlock(&keysgenerated_mutex);
+			return;
+		}
+		++keysgenerated;
+		if (keysgenerated == numneedgenerate)
+			endwork = 1;
+		pthread_mutex_unlock(&keysgenerated_mutex);
+	}
+
+	if (!fout)
+		return;
+
+	char idbuf[IROH_BASE32_LEN + 1];
+	char pubhex[PUBLIC_LEN * 2 + 1];
+	char sechex[IROH_SECRET_LEN * 2 + 1];
+
+	base32_to(idbuf,publickey,PUBLIC_LEN);
+	hex_encode_lower(pubhex,publickey,PUBLIC_LEN);
+	// secret is the clamped 32-byte scalar from the expanded key
+	hex_encode_lower(sechex,secret,IROH_SECRET_LEN);
+
+	pthread_mutex_lock(&fout_mutex);
+	(void) warnnear;
+	fprintf(fout,
+		"EndpointId (base32): %s\n"
+		"EndpointId (hex): %s\n"
+		"SecretKey (hex): %s\n"
+		"ANNOUNCE_SECRET=%s\n"
+		"====================\n",
+		idbuf,pubhex,sechex,sechex);
+	fflush(fout);
+	pthread_mutex_unlock(&fout_mutex);
+}
+
 static void onionready(char *sname,const u8 *secret,const u8 *pubonion,int warnnear)
 {
 	if (endwork)

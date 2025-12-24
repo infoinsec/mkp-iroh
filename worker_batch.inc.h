@@ -9,7 +9,7 @@ void *CRYPTO_NAMESPACE(worker_batch)(void *task)
 	u8 hashsrc[checksumstrlen + PUBLIC_LEN + 1];
 	u8 wpk[PUBLIC_LEN + 1];
 	ge_p3 ALIGN(16) ge_public;
-	char *sname;
+	char *sname = 0;
 
 	// state to keep batch data
 	ge_p3   ALIGN(16) ge_batch [BATCHNUM];
@@ -35,7 +35,8 @@ void *CRYPTO_NAMESPACE(worker_batch)(void *task)
 	memcpy(hashsrc,checksumstr,checksumstrlen);
 	hashsrc[checksumstrlen + PUBLIC_LEN] = 0x03; // version
 
-	sname = makesname();
+	if (!iroh_mode)
+		sname = makesname();
 
 initseed:
 
@@ -95,14 +96,18 @@ initseed:
 
 				ADDNUMSUCCESS;
 
-				// calc checksum
-				memcpy(&hashsrc[checksumstrlen],pk,PUBLIC_LEN);
-				FIPS202_SHA3_256(hashsrc,sizeof(hashsrc),&pk[PUBLIC_LEN]);
-				// version byte
-				pk[PUBLIC_LEN + 2] = 0x03;
-				// full name
-				strcpy(base32_to(&sname[direndpos],pk,PUBONION_LEN),".onion");
-				onionready(sname,secret,pubonion.raw,0);
+				if (iroh_mode) {
+					irohready(sk,pk,0);
+				} else {
+					// calc checksum
+					memcpy(&hashsrc[checksumstrlen],pk,PUBLIC_LEN);
+					FIPS202_SHA3_256(hashsrc,sizeof(hashsrc),&pk[PUBLIC_LEN]);
+					// version byte
+					pk[PUBLIC_LEN + 2] = 0x03;
+					// full name
+					strcpy(base32_to(&sname[direndpos],pk,PUBONION_LEN),".onion");
+					onionready(sname,secret,pubonion.raw,0);
+				}
 				pk[PUBLIC_LEN] = 0; // what is this for?
 				// don't reuse same seed
 				goto initseed;
@@ -114,7 +119,8 @@ initseed:
 	goto initseed;
 
 end:
-	free(sname);
+	if (sname)
+		free(sname);
 
 	POSTFILTER
 

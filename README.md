@@ -47,6 +47,32 @@ when benchmarking different ed25519 implementations on your machine.
 
 Use `-h` switch to obtain all available options.
 
+### Iroh EndpointId vanity (mkp-iroh)
+
+The `mkp-iroh` binary matches RFC4648 base32 prefixes (lowercase, no padding)
+over the 32-byte ed25519 public key (iroh EndpointId). The base32 output length
+is 52 characters; longer prefixes are rejected.
+
+Build it with `make mkp-iroh` (or `make all`).
+
+Example:
+
+```bash
+./mkp-iroh abcd
+```
+
+Output format:
+
+```
+EndpointId (base32): <base32>
+EndpointId (hex): <hex>
+SecretKey (hex): <hex>
+ANNOUNCE_SECRET=<hex>
+```
+
+Use `contrib/iroh_base32_vector.py` to verify base32 encoding against a known
+test vector.
+
 I highly recommend reading [OPTIMISATION.txt][OPTIMISATION] for
 performance-related tips.
 
