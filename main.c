@@ -97,35 +97,21 @@ static const char *prog_basename(const char *path)
 static int detect_iroh_mode(const char *progname)
 {
 	const char *base = prog_basename(progname);
-	return strncmp(base,"mkp-iroh",8) == 0;
+	return strncmp(base,"mkp-iroh-z32",12) == 0 || strncmp(base,"mkp-iroh",8) == 0;
 }
 
 static void printhelp(FILE *out,const char *progname)
 {
 	if (iroh_mode) {
 		fprintf(out,
-			"Usage: %s FILTER [FILTER...] [OPTION]\n"
-			"       %s -f FILTERFILE [OPTION]\n"
-			"Filters are RFC4648 base32 (lowercase a-z and 2-7), max length %d.\n"
+			"Usage: %s PREFIX [PREFIX...] [OPTION]\n"
+			"Prefixes use z-base-32 (lowercase only), max length %d.\n"
 			"Options:\n"
-			"  -f FILTERFILE         specify filter file which contains filters separated\n"
-			"                        by newlines.\n"
-			"  -D                    deduplicate filters.\n"
 			"  -q                    do not print diagnostic output to stderr.\n"
 			"  -x                    do not print matches.\n"
-			"  -v                    print more diagnostic data.\n"
 			"  -o FILENAME           output matches to specified file (append).\n"
+			"                        default is ./iroh-keys.txt\n"
 			"  -O FILENAME           output matches to specified file (overwrite).\n"
-			"  -d DIRNAME            output directory (ignored in iroh mode).\n"
-			"  -F                    include directory names in output (ignored in iroh mode).\n"
-			"  -t NUMTHREADS         specify number of threads to utilise\n"
-			"                        (default - try detecting CPU core count).\n"
-			"  -j NUMTHREADS         same as -t.\n"
-			"  -n NUMKEYS            specify number of keys (default - 0 - unlimited).\n"
-			"  -N NUMWORDS           specify number of words per key (default - 1).\n"
-			"  -Z                    deprecated, does nothing.\n"
-			"  -z                    deprecated, does nothing.\n"
-			"  -B                    use batching key generation method (current default).\n"
 			"  -s                    print statistics each 10 seconds.\n"
 			"  -S SECONDS            print statistics every specified amount of seconds.\n"
 			"  -T                    do not reset statistics counters when printing.\n"
@@ -134,7 +120,7 @@ static void printhelp(FILE *out,const char *progname)
 			"      --rawyaml         ignored in iroh mode.\n"
 			"  -h, --help, --usage   print help to stdout and quit.\n"
 			"  -V, --version         print version information to stdout and exit.\n"
-			,progname,progname,IROH_BASE32_LEN);
+			,progname,IROH_Z32_LEN);
 		fflush(out);
 		return;
 	}
@@ -422,6 +408,10 @@ int main(int argc,char **argv)
 				exit(0);
 			}
 			else if (*arg == 'f') {
+				if (iroh_mode) {
+					fprintf(stderr,"-f is not supported in iroh mode\n");
+					exit(1);
+				}
 				if (argc--) {
 					if (!loadfilterfile(*argv++))
 						exit(1);
@@ -552,6 +542,10 @@ int main(int argc,char **argv)
 			}
 #ifdef PASSPHRASE
 			else if (*arg == 'p') {
+				if (iroh_mode) {
+					fprintf(stderr,"-p is not supported in iroh mode\n");
+					exit(1);
+				}
 				if (argc--) {
 					setpassphrase(*argv++);
 					deterministic = 1;
@@ -560,6 +554,10 @@ int main(int argc,char **argv)
 					e_additional();
 			}
 			else if (*arg == 'P') {
+				if (iroh_mode) {
+					fprintf(stderr,"-P is not supported in iroh mode\n");
+					exit(1);
+				}
 				const char *pass = getenv("PASSPHRASE");
 				if (!pass) {
 					fprintf(stderr,"store passphrase in PASSPHRASE environment variable\n");
@@ -597,6 +595,11 @@ int main(int argc,char **argv)
 	}
 #endif
 
+	if (iroh_mode && fout && !outfile) {
+		outfile = "iroh-keys.txt";
+		outfileoverwrite = 0;
+	}
+
 	if (outfile) {
 		fout = fopen(outfile,!outfileoverwrite ? "a" : "w");
 		if (!fout) {
@@ -610,7 +613,7 @@ int main(int argc,char **argv)
 		exit(1);
 	}
 
-	if (workdir)
+	if (workdir && !iroh_mode)
 		createdir(workdir,1);
 
 	direndpos = workdirlen;
@@ -736,7 +739,7 @@ int main(int argc,char **argv)
 	else {
 		// 256KiB plus whatever batch stuff uses if in batch mode
 		size_t ss = 256 << 10;
-		if (wt == WT_BATCH)
+		if (wt == WT_BATCH && !iroh_mode)
 			ss += worker_batch_memuse();
 		// align to 64KiB
 		ss = (ss + (64 << 10) - 1) & ~((64 << 10) - 1);
@@ -746,6 +749,14 @@ int main(int argc,char **argv)
 			perror("pthread_attr_setstacksize");
 	}
 
+	void *(*worker_fn)(void *) = CRYPTO_NAMESPACE(worker_batch);
+#ifdef PASSPHRASE
+	if (deterministic)
+		worker_fn = CRYPTO_NAMESPACE(worker_batch_pass);
+#endif
+	if (iroh_mode)
+		worker_fn = CRYPTO_NAMESPACE(worker_seed);
+
 	for (size_t i = 0;i < VEC_LENGTH(threads);++i) {
 		void *tp = 0;
 #ifdef STATISTICS
@@ -754,12 +765,7 @@ int main(int argc,char **argv)
 		tret = pthread_create(
 			&VEC_BUF(threads,i),
 			tattrp,
-#ifdef PASSPHRASE
-			deterministic
-				? CRYPTO_NAMESPACE(worker_batch_pass)
-				:
-#endif
-			CRYPTO_NAMESPACE(worker_batch),
+			worker_fn,
 			tp
 		);
 		if (tret) {

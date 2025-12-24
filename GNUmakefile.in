@@ -26,6 +26,7 @@ MAIN_OBJ= \
 	cpucount.c.o \
 	base32_to.c.o \
 	base32_from.c.o \
+	z32.c.o \
 	base64_to.c.o \
 	base64_from.c.o \
 	ioutil.c.o \
@@ -75,7 +76,7 @@ UTIL_CALCEST_LIB= -lm
 TEST_ED25519_LIB= -lsodium
 
 MAIN_TGT= mkp224o
-IROH_TGT= mkp-iroh
+IROH_TGT= mkp-iroh-z32
 UTIL_TGT= calcest
 TEST_TGT= test_base64 test_base32 test_base16 test_ed25519
 
@@ -101,7 +102,7 @@ test: $(TEST_EXE)
 mkp224o@EXEEXT@: $(MAIN_OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@.tmp $^ $(MAIN_LIB) && $(MV) $@.tmp $@
 
-mkp-iroh@EXEEXT@: mkp224o@EXEEXT@
+mkp-iroh-z32@EXEEXT@: mkp224o@EXEEXT@
 	$(CP) $< $@
 
 calcest@EXEEXT@: $(UTIL_CALCEST_OBJ)

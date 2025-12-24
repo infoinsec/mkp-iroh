@@ -46,3 +46,4 @@ extern void *CRYPTO_NAMESPACE(worker_batch)(void *task);
 #ifdef PASSPHRASE
 extern void *CRYPTO_NAMESPACE(worker_batch_pass)(void *task);
 #endif
+extern void *CRYPTO_NAMESPACE(worker_seed)(void *task);

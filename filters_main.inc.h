@@ -1,6 +1,7 @@
 
 #include "filters_common.inc.h"
 #include "ifilter_bitsum.h"
+#include "z32.h"
 
 #ifdef INTFILTER
 
@@ -311,10 +312,16 @@ static void filters_print(void)
 		u8 *ifraw = VEC_BUF(filters,i).f;
 #endif // BINFILTER
 #ifdef NEEDBINFILTER
-		base32_to(buf0,ifraw,len);
+		if (iroh_mode)
+			z32_to(buf0,ifraw,len);
+		else
+			base32_to(buf0,ifraw,len);
 		memcpy(bufx,ifraw,len);
 		bufx[len - 1] |= ~mask;
-		base32_to(buf1,bufx,len);
+		if (iroh_mode)
+			z32_to(buf1,bufx,len);
+		else
+			base32_to(buf1,bufx,len);
 		char *a = buf0,*b = buf1;
 		while (*a && *a == *b)
 			++a, ++b;
@@ -326,20 +333,6 @@ static void filters_print(void)
 #endif // PCRE2FILTER
 	}
 	fprintf(stderr,"in total, " FSZ " %s\n",l,l == 1 ? "filter" : "filters");
-}
-
-static int iroh_base32_valid(const char *src,size_t *count)
-{
-	const char *p;
-	for (p = src;*p;++p) {
-		const unsigned char c = (unsigned char)*p;
-		if ((c >= 'a' && c <= 'z') || (c >= '2' && c <= '7'))
-			continue;
-		break;
-	}
-	if (count)
-		*count = (size_t)(p - src);
-	return !*p;
 }
 
 void filters_add(const char *filter)
@@ -362,9 +355,9 @@ void filters_add(const char *filter)
 	memset(&bf,0,sizeof(bf));
 
 	if (iroh_mode) {
-		if (!iroh_base32_valid(filter,&flen)) {
+		if (!z32_valid(filter,&flen)) {
 			fprintf(stderr,
-				"filter \"%s\" is not valid RFC4648 base32 string (lowercase a-z2-7)\n",
+				"filter \"%s\" is not valid z-base-32 string (lowercase only)\n",
 				filter);
 			fprintf(stderr,"        ");
 			while (flen--)
@@ -372,10 +365,10 @@ void filters_add(const char *filter)
 			fprintf(stderr,"^\n");
 			return;
 		}
-		if (flen > IROH_BASE32_LEN) {
+		if (flen > IROH_Z32_LEN) {
 			fprintf(stderr,"filter \"%s\" is too long\n",filter);
 			fprintf(stderr,"        ");
-			for (size_t i = 0;i < IROH_BASE32_LEN;++i)
+			for (size_t i = 0;i < IROH_Z32_LEN;++i)
 				fputc(' ',stderr);
 			fprintf(stderr,"^\n");
 			return;
@@ -397,7 +390,7 @@ void filters_add(const char *filter)
 # else
 	size_t maxsz = sizeof(bf.f);
 # endif
-	if (ret > maxsz && !(iroh_mode && flen == IROH_BASE32_LEN && maxsz == PUBLIC_LEN)) {
+	if (ret > maxsz && !(iroh_mode && flen == IROH_Z32_LEN && maxsz == PUBLIC_LEN)) {
 		fprintf(stderr,"filter \"%s\" is too long\n",filter);
 		fprintf(stderr,"        ");
 		maxsz = (maxsz * 8) / 5;
@@ -406,11 +399,11 @@ void filters_add(const char *filter)
 		fprintf(stderr,"^\n");
 		return;
 	}
-	if (iroh_mode && flen == IROH_BASE32_LEN && maxsz == PUBLIC_LEN) {
+	if (iroh_mode && flen == IROH_Z32_LEN && maxsz == PUBLIC_LEN) {
 		const char last = filter[flen - 1];
-		if (last != 'a' && last != 'q') {
+		if (last != 'y' && last != 'o') {
 			fprintf(stderr,
-				"filter \"%s\" is not a valid RFC4648 base32 public key (last char must be a or q)\n",
+				"filter \"%s\" is not a valid z32 public key (last char must be y or o)\n",
 				filter);
 			fprintf(stderr,"        ");
 			for (size_t i = 0;i + 1 < flen;++i)
@@ -420,12 +413,15 @@ void filters_add(const char *filter)
 		}
 		u8 tmp[PUBLIC_LEN + 1] = {0};
 		u8 tmask = 0;
-		base32_from(tmp,&tmask,filter);
+		z32_from(tmp,&tmask,filter);
 		memcpy(bf.f,tmp,PUBLIC_LEN);
 		bf.len = PUBLIC_LEN - 1;
 		bf.mask = 0xFF;
 	} else {
-		base32_from(bf.f,&bf.mask,filter);
+		if (iroh_mode)
+			z32_from(bf.f,&bf.mask,filter);
+		else
+			base32_from(bf.f,&bf.mask,filter);
 		bf.len = ret - 1;
 	}
 

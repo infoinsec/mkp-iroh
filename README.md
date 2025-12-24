@@ -47,30 +47,35 @@ when benchmarking different ed25519 implementations on your machine.
 
 Use `-h` switch to obtain all available options.
 
-### Iroh EndpointId vanity (mkp-iroh)
+### Iroh EndpointId vanity (mkp-iroh-z32)
 
-The `mkp-iroh` binary matches RFC4648 base32 prefixes (lowercase, no padding)
-over the 32-byte ed25519 public key (iroh EndpointId). The base32 output length
-is 52 characters; longer prefixes are rejected.
+The `mkp-iroh-z32` binary matches z-base-32 (z32) prefixes (lowercase, no padding)
+over the 32-byte ed25519 public key (iroh EndpointId). z32 output length is
+52 characters; longer prefixes are rejected. Note that z32 uses a different
+alphabet than RFC4648 base32 used for Tor .onion addresses, so prefixes are
+not interchangeable.
 
-Build it with `make mkp-iroh` (or `make all`).
+Build it with `make mkp-iroh-z32` (or `make all`).
 
 Example:
 
 ```bash
-./mkp-iroh abcd
+./mkp-iroh-z32 abcd
 ```
 
 Output format:
 
 ```
-EndpointId (base32): <base32>
+Iroh z32: <z32>
 EndpointId (hex): <hex>
 SecretKey (hex): <hex>
 ANNOUNCE_SECRET=<hex>
 ```
 
-Use `contrib/iroh_base32_vector.py` to verify base32 encoding against a known
+By default, matches are appended to `./iroh-keys.txt`. Use `-o` or `-O` to
+override the output path.
+
+Use `contrib/iroh_z32_vector.py` to verify z32 encoding against a known
 test vector.
 
 I highly recommend reading [OPTIMISATION.txt][OPTIMISATION] for

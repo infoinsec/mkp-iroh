@@ -178,7 +178,10 @@ do { \
 
 #define DOFILTER(it,pk,code) \
 do { \
-	base32_to(pkconvbuf,pk,PUBLIC_LEN); \
+	if (iroh_mode) \
+		z32_to(pkconvbuf,pk,PUBLIC_LEN); \
+	else \
+		base32_to(pkconvbuf,pk,PUBLIC_LEN); \
 	size_t __l = VEC_LENGTH(filters); \
 	for (it = 0;it < __l;++it) { \
 		int rc = pcre2_match(VEC_BUF(filters,it).re,(PCRE2_SPTR8)pkconvbuf,BASE32_TO_LEN(PUBLIC_LEN),0, \

@@ -7,6 +7,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <sodium/randombytes.h>
+#include <sodium/crypto_stream_chacha20.h>
 #ifdef PASSPHRASE
 #include <sodium/crypto_hash_sha256.h>
 #endif
@@ -16,6 +17,7 @@
 #include "likely.h"
 #include "vec.h"
 #include "base32.h"
+#include "z32.h"
 #include "keccak.h"
 #include "ioutil.h"
 #include "common.h"
@@ -83,7 +85,7 @@ static void hex_encode_lower(char *dst,const u8 *src,size_t slen)
 	*dst = 0;
 }
 
-static void irohready(const u8 *secret,const u8 *publickey,int warnnear)
+static void irohready(const u8 *seed,const u8 *publickey,int warnnear)
 {
 	if (endwork)
 		return;
@@ -103,19 +105,19 @@ static void irohready(const u8 *secret,const u8 *publickey,int warnnear)
 	if (!fout)
 		return;
 
-	char idbuf[IROH_BASE32_LEN + 1];
+	char idbuf[IROH_Z32_LEN + 1];
 	char pubhex[PUBLIC_LEN * 2 + 1];
 	char sechex[IROH_SECRET_LEN * 2 + 1];
 
-	base32_to(idbuf,publickey,PUBLIC_LEN);
+	z32_to(idbuf,publickey,PUBLIC_LEN);
 	hex_encode_lower(pubhex,publickey,PUBLIC_LEN);
-	// secret is the clamped 32-byte scalar from the expanded key
-	hex_encode_lower(sechex,secret,IROH_SECRET_LEN);
+	// seed is the 32-byte secret used to derive the keypair
+	hex_encode_lower(sechex,seed,IROH_SECRET_LEN);
 
 	pthread_mutex_lock(&fout_mutex);
 	(void) warnnear;
 	fprintf(fout,
-		"EndpointId (base32): %s\n"
+		"Iroh z32: %s\n"
 		"EndpointId (hex): %s\n"
 		"SecretKey (hex): %s\n"
 		"ANNOUNCE_SECRET=%s\n"

@@ -16,8 +16,8 @@ extern const char * const skprefix;
 // full onion address, WITHOUT newline or terminating nil char
 #define ONION_LEN 62
 
-// RFC4648 base32 length for a 32-byte public key (no padding)
-#define IROH_BASE32_LEN 52
+// z-base-32 length for a 32-byte public key (no padding)
+#define IROH_Z32_LEN 52
 #define IROH_SECRET_LEN 32
 
 extern pthread_mutex_t fout_mutex;
