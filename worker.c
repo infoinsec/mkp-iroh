@@ -120,9 +120,8 @@ static void irohready(const u8 *seed,const u8 *publickey,int warnnear)
 		"Iroh z32: %s\n"
 		"EndpointId (hex): %s\n"
 		"SecretKey (hex): %s\n"
-		"ANNOUNCE_SECRET=%s\n"
 		"====================\n",
-		idbuf,pubhex,sechex,sechex);
+		idbuf,pubhex,sechex);
 	fflush(fout);
 	pthread_mutex_unlock(&fout_mutex);
 }

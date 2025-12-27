@@ -144,6 +144,39 @@ then
 	CFLAGS="$CFLAGS -msse2"
 fi
 
+LIB25519_OBJ=""
+AC_ARG_ENABLE([lib25519],
+	[AS_HELP_STRING([--enable-lib25519],
+		[use lib25519 arm64-maa4 backend for ed25519 basepoint multiplication @<:@default=no@:>@])],
+	[], [enable_lib25519=no]
+)
+if test x"$enable_lib25519" = x"yes"
+then
+	case "`uname -m`" in
+		arm64|aarch64) ;;
+		*) AC_MSG_ERROR([--enable-lib25519 requires arm64/aarch64]) ;;
+	esac
+	MYDEFS="$MYDEFS -DUSE_LIB25519_NG"
+	LIB25519_OBJ="lib25519_iroh.c.o \
+	lib25519/arm64-maa4-intmul/fe25519_add.S.o \
+	lib25519/arm64-maa4-intmul/fe25519_cmov.S.o \
+	lib25519/arm64-maa4-intmul/fe25519_freeze.S.o \
+	lib25519/arm64-maa4-intmul/fe25519_getparity.c.o \
+	lib25519/arm64-maa4-intmul/fe25519_mul.S.o \
+	lib25519/arm64-maa4-intmul/fe25519_nsquare.S.o \
+	lib25519/arm64-maa4-intmul/fe25519_pack.c.o \
+	lib25519/arm64-maa4-intmul/fe25519_square.S.o \
+	lib25519/arm64-maa4-intmul/fe25519_sub.S.o \
+	lib25519/arm64-maa4-intmul/fe25519_unpack.c.o \
+	lib25519/arm64-maa4-intmul/fe25519_invert.c.o \
+	lib25519/arm64-maa4-intmul/ge25519_base.S.o \
+	lib25519/arm64-maa4-intmul/ge25519_scalarmult_base.c.o \
+	lib25519/arm64-maa4-intmul/sc25519_from32bytes.c.o \
+	lib25519/arm64-maa4-intmul/sc25519_window4.c.o \
+	lib25519/arm64-maa4-intmul/shared-base-data.c.o"
+fi
+AC_SUBST(LIB25519_OBJ)
+
 
 
 AC_ARG_ENABLE([intfilter],

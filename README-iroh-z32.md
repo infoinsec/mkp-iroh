@@ -1,25 +1,35 @@
 # mkp-iroh-z32
 
-This branch adds `mkp-iroh-z32`, a vanity generator for Iroh EndpointIds using
-z-base-32 (z32) encoding. It searches for prefixes in the z32-encoded 32-byte
-ed25519 public key and outputs the 32-byte seed required for ANNOUNCE_SECRET.
+This repo contains a modified mkp224o that adds `mkp-iroh-z32`, a vanity
+prefix generator for Iroh EndpointIds using z-base-32 (z32) encoding.
 
-## Identifier formats
-- Iroh EndpointId: 32-byte ed25519 public key.
-- Iroh z32: 52 chars, alphabet `ybndrfg8ejkmcpqxot1uwisza345h769` (lowercase).
-- Tor v3 onion uses RFC4648 base32 with a different alphabet.
+## Build (recommended)
 
-## Usage
-`./mkp-iroh-z32 <prefix> [prefix...]`
+From the `mkp224o/` directory:
 
+```bash
+./autogen.sh
+make clean
+./configure --enable-intfilter=64 --enable-lib25519 CPPFLAGS="-I/opt/homebrew/include" LDFLAGS="-L/opt/homebrew/lib"
+make mkp-iroh-z32
+```
+
+Note: `--enable-ref10` was slower on Apple Silicon in our tests, so we avoid it.
+If lib25519 is unavailable on your system, omit `--enable-lib25519`.
+
+## Run
+
+```bash
+./mkp-iroh-z32 <prefix> [prefix...]
+```
+
+- Prefixes use z32 alphabet: `ybndrfg8ejkmcpqxot1uwisza345h769` (lowercase only).
 - Multiple prefixes are OR (match any).
-- Invalid characters or uppercase letters are rejected.
+- Matches append to `./iroh-keys.txt` by default.
+- Use `-o` (append) or `-O` (overwrite) to set output file.
+- Use `-s` to print statistics.
 
 ## Output
-Matches append to `./iroh-keys.txt` by default. Use `-o` or `-O` to change
-output path/name. `-x` disables output. `-s` prints stats.
-
-Output lines:
 
 ```
 Iroh z32: <z32>
@@ -28,5 +38,8 @@ SecretKey (hex): <hex>
 ANNOUNCE_SECRET=<hex>
 ```
 
-## Test vector
-Run `python3 contrib/iroh_z32_vector.py` to verify z32 encoding.
+## Notes
+
+- z32 is different from RFC4648 base32 (Tor onion addresses). Prefixes are not
+  interchangeable.
+- `ANNOUNCE_SECRET` requires the 32-byte seed (this tool outputs it).

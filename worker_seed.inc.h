@@ -2,6 +2,10 @@
 #define SEED_POOL_COUNT 1024
 #endif
 
+#ifdef USE_LIB25519_NG
+#include "lib25519_iroh.h"
+#endif
+
 static inline void store_le64(u8 out[8],u64 v)
 {
 	for (int i = 0;i < 8;++i) {
@@ -16,7 +20,9 @@ void *CRYPTO_NAMESPACE(worker_seed)(void *task)
 	u8 sk[SECRET_LEN];
 	u8 pk[PUBLIC_LEN + 1];
 	u8 wpk[PUBLIC_LEN + 1];
+#ifndef USE_LIB25519_NG
 	ge_p3 ALIGN(16) ge_public;
+#endif
 	size_t i;
 	// Pool RNG output to reduce randombytes() calls per key.
 	u8 seed_pool[SEED_LEN * SEED_POOL_COUNT];
@@ -52,8 +58,12 @@ void *CRYPTO_NAMESPACE(worker_seed)(void *task)
 		memcpy(seed,&seed_pool[pool_idx * SEED_LEN],SEED_LEN);
 		++pool_idx;
 		ed25519_seckey_expand(sk,seed);
+#ifdef USE_LIB25519_NG
+		lib25519_ed25519_pubkey_from_scalar(pk,sk);
+#else
 		ge_scalarmult_base(&ge_public,sk);
 		ge_p3_tobytes(pk,&ge_public);
+#endif
 
 #ifdef STATISTICS
 		++st->numcalc.v;

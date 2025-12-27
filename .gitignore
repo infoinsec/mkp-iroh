@@ -1,11 +1,17 @@
 # output files
-mkp224o
 calcest
 test_*
 *.o
 
 # generated onions
 *.onion
+
+# local artifacts
+.DS_Store
+iroh-keys.txt
+mkp-iroh
+mkp-iroh-z32
+mkp224o
 
 # garbage
 configure

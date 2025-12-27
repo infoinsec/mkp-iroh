@@ -30,8 +30,11 @@ MAIN_OBJ= \
 	base64_to.c.o \
 	base64_from.c.o \
 	ioutil.c.o \
+	$(LIB25519_OBJ) \
 	$(ED25519_OBJ) \
 	keccak.c.o
+
+LIB25519_OBJ= @LIB25519_OBJ@
 
 UTIL_CALCEST_OBJ= \
 	calcest.c.o
@@ -140,12 +143,16 @@ VPATH=@SRCDIR@
 	-D'_CRYPTO_NAMESPACETOP=_crypto_sign_ed25519_@ED25519IMPL@'             \
 	-D'CRYPTO_NAMESPACE(name)=crypto_sign_ed25519_@ED25519IMPL@_\#\#name'   \
 	-D'_CRYPTO_NAMESPACE(name)=_crypto_sign_ed25519_@ED25519IMPL@_\#\#name' \
+	-D'CRYPTO_SHARED_NAMESPACE(name)=crypto_sign_ed25519_@ED25519IMPL@_\#\#name' \
+	-D'_CRYPTO_SHARED_NAMESPACE(name)=_crypto_sign_ed25519_@ED25519IMPL@_\#\#name' \
 
 %.S.o: ASFLAGS += \
 	-D'CRYPTO_NAMESPACETOP=crypto_sign_ed25519_@ED25519IMPL@'               \
 	-D'_CRYPTO_NAMESPACETOP=_crypto_sign_ed25519_@ED25519IMPL@'             \
 	-D'CRYPTO_NAMESPACE(name)=crypto_sign_ed25519_@ED25519IMPL@_\#\#name'   \
 	-D'_CRYPTO_NAMESPACE(name)=_crypto_sign_ed25519_@ED25519IMPL@_\#\#name' \
+	-D'CRYPTO_SHARED_NAMESPACE(name)=crypto_sign_ed25519_@ED25519IMPL@_\#\#name' \
+	-D'_CRYPTO_SHARED_NAMESPACE(name)=_crypto_sign_ed25519_@ED25519IMPL@_\#\#name' \
 
 %.c.o: %.c
 	$(CC) $(CFLAGS) -c -o $@.tmp $< && $(MV) $@.tmp $@
