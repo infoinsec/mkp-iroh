@@ -29,3 +29,4 @@ extern size_t printstartpos; // where to start printing from
 extern size_t printlen;      // precalculated, related to printstartpos
 
 extern int iroh_mode;
+extern int iroh_print_stdout;

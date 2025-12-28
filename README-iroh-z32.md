@@ -3,6 +3,23 @@
 This repo contains a modified mkp224o that adds `mkp-iroh-z32`, a vanity
 prefix generator for Iroh EndpointIds using z-base-32 (z32) encoding.
 
+## Build dependencies
+
+You need a C compiler, GNU make, autoconf, and libsodium.
+
+### macOS (Homebrew)
+
+```bash
+xcode-select --install
+brew install autoconf make libsodium
+```
+
+Use `gmake` (GNU make) instead of `make`, or add GNU make to your PATH:
+
+```bash
+export PATH="/opt/homebrew/opt/make/libexec/gnubin:$PATH"
+```
+
 ## Build (recommended)
 
 From the `mkp224o/` directory:
@@ -25,7 +42,8 @@ If lib25519 is unavailable on your system, omit `--enable-lib25519`.
 
 - Prefixes use z32 alphabet: `ybndrfg8ejkmcpqxot1uwisza345h769` (lowercase only).
 - Multiple prefixes are OR (match any).
-- Matches append to `./iroh-keys.txt` by default.
+- Matches append to `./iroh-keys.txt` and are also printed to stdout by default.
+- Use `-x` to suppress stdout output.
 - Use `-o` (append) or `-O` (overwrite) to set output file.
 - Use `-s` to print statistics.
 

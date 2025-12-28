@@ -49,6 +49,7 @@ static int verboseflag = 0;
 static int wantdedup = 0;
 #endif
 int iroh_mode = 0;
+int iroh_print_stdout = 1;
 
 // 0, direndpos, onionendpos
 // printstartpos = either 0 or direndpos
@@ -108,7 +109,7 @@ static void printhelp(FILE *out,const char *progname)
 			"Prefixes use z-base-32 (lowercase only), max length %d.\n"
 			"Options:\n"
 			"  -q                    do not print diagnostic output to stderr.\n"
-			"  -x                    do not print matches.\n"
+			"  -x                    do not print matches to stdout.\n"
 			"  -o FILENAME           output matches to specified file (append).\n"
 			"                        default is ./iroh-keys.txt\n"
 			"  -O FILENAME           output matches to specified file (overwrite).\n"
@@ -428,8 +429,12 @@ int main(int argc,char **argv)
 			}
 			else if (*arg == 'q')
 				++quietflag;
-			else if (*arg == 'x')
-				fout = 0;
+			else if (*arg == 'x') {
+				if (iroh_mode)
+					iroh_print_stdout = 0;
+				else
+					fout = 0;
+			}
 			else if (*arg == 'v')
 				verboseflag = 1;
 			else if (*arg == 'o') {

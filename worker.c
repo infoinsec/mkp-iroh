@@ -102,7 +102,8 @@ static void irohready(const u8 *seed,const u8 *publickey,int warnnear)
 		pthread_mutex_unlock(&keysgenerated_mutex);
 	}
 
-	if (!fout)
+	FILE *stdout_out = iroh_print_stdout ? stdout : 0;
+	if (!fout && !stdout_out)
 		return;
 
 	char idbuf[IROH_Z32_LEN + 1];
@@ -116,13 +117,24 @@ static void irohready(const u8 *seed,const u8 *publickey,int warnnear)
 
 	pthread_mutex_lock(&fout_mutex);
 	(void) warnnear;
-	fprintf(fout,
-		"Iroh z32: %s\n"
-		"EndpointId (hex): %s\n"
-		"SecretKey (hex): %s\n"
-		"====================\n",
-		idbuf,pubhex,sechex);
-	fflush(fout);
+	if (fout) {
+		fprintf(fout,
+			"Iroh z32: %s\n"
+			"EndpointId (hex): %s\n"
+			"SecretKey (hex): %s\n"
+			"====================\n",
+			idbuf,pubhex,sechex);
+		fflush(fout);
+	}
+	if (stdout_out && stdout_out != fout) {
+		fprintf(stdout_out,
+			"Iroh z32: %s\n"
+			"EndpointId (hex): %s\n"
+			"SecretKey (hex): %s\n"
+			"====================\n",
+			idbuf,pubhex,sechex);
+		fflush(stdout_out);
+	}
 	pthread_mutex_unlock(&fout_mutex);
 }
 

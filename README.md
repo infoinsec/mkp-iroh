@@ -72,8 +72,9 @@ SecretKey (hex): <hex>
 ANNOUNCE_SECRET=<hex>
 ```
 
-By default, matches are appended to `./iroh-keys.txt`. Use `-o` or `-O` to
-override the output path.
+By default, matches are appended to `./iroh-keys.txt` and are also printed to
+stdout. Use `-x` to suppress stdout output. Use `-o` or `-O` to override the
+output path.
 
 Use `contrib/iroh_z32_vector.py` to verify z32 encoding against a known
 test vector.
