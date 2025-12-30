@@ -8,10 +8,15 @@ test_*
 
 # local artifacts
 .DS_Store
+.gocache
+.gomodcache
+.gopath
+aws-lc-install
 iroh-keys.txt
 mkp-iroh
 mkp-iroh-z32
 mkp224o
+third_party/aws-lc
 
 # garbage
 configure

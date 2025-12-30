@@ -31,10 +31,12 @@ MAIN_OBJ= \
 	base64_from.c.o \
 	ioutil.c.o \
 	$(LIB25519_OBJ) \
+	$(AWSLC_OBJ) \
 	$(ED25519_OBJ) \
 	keccak.c.o
 
 LIB25519_OBJ= @LIB25519_OBJ@
+AWSLC_OBJ= @AWSLC_OBJ@
 
 UTIL_CALCEST_OBJ= \
 	calcest.c.o

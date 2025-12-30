@@ -56,6 +56,9 @@ alphabet than RFC4648 base32 used for Tor .onion addresses, so prefixes are
 not interchangeable.
 
 Build it with `make mkp-iroh-z32` (or `make all`).
+To use AWS-LC for faster seed->public key in iroh mode, configure with
+`--enable-aws-lc --with-aws-lc=/path/to/aws-lc/install` (expects
+`include/openssl` and `lib/libcrypto` under that prefix).
 
 Example:
 

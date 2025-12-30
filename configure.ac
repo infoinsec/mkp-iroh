@@ -145,6 +145,7 @@ then
 fi
 
 LIB25519_OBJ=""
+AWSLC_OBJ=""
 AC_ARG_ENABLE([lib25519],
 	[AS_HELP_STRING([--enable-lib25519],
 		[use lib25519 arm64-maa4 backend for ed25519 basepoint multiplication @<:@default=no@:>@])],
@@ -175,7 +176,38 @@ then
 	lib25519/arm64-maa4-intmul/sc25519_window4.c.o \
 	lib25519/arm64-maa4-intmul/shared-base-data.c.o"
 fi
+
+AC_ARG_ENABLE([aws-lc],
+	[AS_HELP_STRING([--enable-aws-lc],
+		[use AWS-LC for ed25519 seed->public key in iroh mode @<:@default=no@:>@])],
+	[], [enable_aws_lc=no]
+)
+AC_ARG_WITH([aws-lc],
+	[AS_HELP_STRING([--with-aws-lc=DIR],
+		[AWS-LC install prefix (expects include/openssl and lib) @<:@default=none@:>@])],
+	[with_aws_lc="$withval"],
+	[with_aws_lc=""]
+)
+if test x"$enable_aws_lc" = x"yes"
+then
+	if test x"$enable_lib25519" = x"yes"
+	then
+		AC_MSG_ERROR([--enable-aws-lc conflicts with --enable-lib25519])
+	fi
+	MYDEFS="$MYDEFS -DUSE_AWSLC"
+	AWSLC_OBJ="aws_lc_iroh.c.o"
+	if test -n "$with_aws_lc" -a x"$with_aws_lc" != x"yes"
+	then
+		CPPFLAGS="$CPPFLAGS -I$with_aws_lc/include"
+		LDFLAGS="$LDFLAGS -L$with_aws_lc/lib"
+	fi
+	AC_CHECK_HEADERS([openssl/curve25519.h],[],
+		[AC_MSG_ERROR([openssl/curve25519.h not found; point --with-aws-lc to AWS-LC])])
+	MAINLIB="$MAINLIB -lcrypto"
+fi
+
 AC_SUBST(LIB25519_OBJ)
+AC_SUBST(AWSLC_OBJ)
 
 
 
